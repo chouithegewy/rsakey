@@ -1,0 +1,124 @@
+import java.math.BigInteger;
+import java.util.Random;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.IOException;
+
+class RSAKey {
+    public static void main(String[] args) {
+        BigInteger[] parsedArgs = { BigInteger.ZERO };
+        try {
+            parsedArgs = parseArgs(args);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
+        BigInteger p = parsedArgs[0];
+        BigInteger q = parsedArgs[1];
+        BigInteger kOrE = parsedArgs[2];
+        BigInteger n = null;
+        BigInteger e = null;
+        BigInteger d = null;
+        if (p == null && q == null) {
+            BigInteger[] nTotientOfN = nTotientOfN(kOrE.intValue(), null, null);
+            p = null;
+            q = null;
+            n = nTotientOfN[0];
+            BigInteger totientOfN = nTotientOfN[1];
+            e = selectIntegerE(totientOfN);
+            d = calculateD(e, n);
+        } else {
+            e = kOrE;
+            BigInteger[] nTotientOfN = nTotientOfN(-1, p, q);
+            p = null;
+            q = null;
+            n = nTotientOfN[0];
+            BigInteger totientOfN = nTotientOfN[1];
+            d = calculateD(e, totientOfN);
+        }
+        try (FileWriter f = new FileWriter("pub_key.txt", false)) {
+            PrintWriter out = new PrintWriter(new BufferedWriter(f));
+            out.println("e = " + e);
+            out.println("n = " + n);
+            out.flush();
+
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            System.exit(-1);
+        }
+        try (FileWriter f = new FileWriter("pri_key.txt")) {
+            PrintWriter out = new PrintWriter(new BufferedWriter(f));
+            out.println("d = " + d);
+            out.println("n = " + n);
+            out.flush();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            System.exit(-1);
+        }
+    }
+
+    // n = p x q, ø(n)=(p-1)x(q-1)
+    static BigInteger[] nTotientOfN(int kBits, BigInteger p, BigInteger q) {
+        if (kBits < 0) {
+            kBits = 1 << 11;
+        }
+        Random rnd = new Random();
+        if (p == null) {
+            p = BigInteger.probablePrime(kBits, rnd);
+        }
+        if (q == null) {
+            q = BigInteger.probablePrime(kBits, rnd);
+        }
+        BigInteger n = p.multiply(q);
+        BigInteger totientOfN = (p.subtract(BigInteger.ONE)).multiply(q.subtract(BigInteger.ONE));
+        BigInteger[] n_totient_of_n = { n, totientOfN };
+        return n_totient_of_n;
+    }
+
+    // gcd(ø(n),e)=1; 1<e<ø(n)
+    static BigInteger selectIntegerE(BigInteger totient) {
+        while (true) {
+            BigInteger e = totient.divide(BigInteger.TWO).nextProbablePrime();
+            if (e.compareTo(totient) >= 0 && !e.equals(BigInteger.ONE)) {
+                // e must be less than totient and greater than 1
+                continue;
+            }
+            boolean isCoprime = BigInteger.ONE.equals(totient.gcd(e));
+            if (isCoprime) {
+                return e;
+            }
+        }
+    }
+
+    // d ≡ e^-1 (mod ø(n))
+    static BigInteger calculateD(BigInteger e, BigInteger totient) {
+        return e.modInverse(totient);
+    }
+
+    // parse command line args
+    // if one given, then k-bits
+    // if three given, then p q e
+    static BigInteger[] parseArgs(String[] args) throws Exception {
+        BigInteger kOrE;
+        BigInteger p;
+        BigInteger q;
+        if (args.length == 1) {
+            // k given
+            kOrE = new BigInteger(args[0]);
+            p = null;
+            q = null;
+        } else if (args.length == 3) {
+            // p q e given
+            p = new BigInteger(args[0]);
+            q = new BigInteger(args[1]);
+            kOrE = new BigInteger(args[2]);
+        } else {
+            throw new Exception(
+                    "Invalid amount of args: " + args.length + "\nCan be 1 if k-bits given or three if p q and e");
+        }
+
+        BigInteger[] userInput = { p, q, kOrE };
+        return userInput;
+    }
+}
