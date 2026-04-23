@@ -25,8 +25,11 @@ class RSAKey {
             p = null;
             q = null;
             n = nTotientOfN[0];
-            BigInteger totientOfN = nTotientOfN[1];
-            e = selectIntegerE(totientOfN);
+            BigInteger phi = nTotientOfN[1];
+            e = selectIntegerE(phi);
+            while (e.equals(BigInteger.ZERO)) {
+                e = selectIntegerE(phi);
+            }
             d = calculateD(e, n);
         } else {
             e = kOrE;
@@ -63,12 +66,11 @@ class RSAKey {
         if (kBits < 0) {
             kBits = 1 << 11;
         }
-        Random rnd = new Random();
         if (p == null) {
-            p = BigInteger.probablePrime(kBits, rnd);
+            p = BigInteger.probablePrime(kBits, new Random());
         }
         if (q == null) {
-            q = BigInteger.probablePrime(kBits, rnd);
+            q = BigInteger.probablePrime(kBits, new Random());
         }
         BigInteger n = p.multiply(q);
         BigInteger totientOfN = (p.subtract(BigInteger.ONE)).multiply(q.subtract(BigInteger.ONE));
@@ -77,17 +79,15 @@ class RSAKey {
     }
 
     // gcd(ø(n),e)=1; 1<e<ø(n)
+    // return 0 in oft chance 2^16 + 1 (Fermat's Fourth Prime) is not coprime to e
+    // propogate error upward, regenerate n, try again
     static BigInteger selectIntegerE(BigInteger totient) {
-        while (true) {
-            BigInteger e = totient.divide(BigInteger.TWO).nextProbablePrime();
-            if (e.compareTo(totient) >= 0 && !e.equals(BigInteger.ONE)) {
-                // e must be less than totient and greater than 1
-                continue;
-            }
-            boolean isCoprime = BigInteger.ONE.equals(totient.gcd(e));
-            if (isCoprime) {
-                return e;
-            }
+        BigInteger e = BigInteger.valueOf((1 << 15) + 1);
+        boolean isCoprime = BigInteger.ONE.equals(totient.gcd(e));
+        if (isCoprime) {
+            return e;
+        } else {
+            return BigInteger.ZERO;
         }
     }
 
