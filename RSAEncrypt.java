@@ -1,14 +1,20 @@
 package rsa;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.CharBuffer;
+import java.text.Format;
 import java.util.HashMap;
 
 import rsa.RSAKey;
 
 class RSAEncrypt {
+    static private String encoding = "abcdefghijklmnopqrstuvwxyz ";
+
     static void main(String[] args) {
         // t, h, i
         BigInteger plaintext = BigInteger.valueOf(190708);
@@ -20,11 +26,8 @@ class RSAEncrypt {
         BigInteger d = BigInteger.valueOf(11296191);
         BigInteger p = c.modPow(d, n);
         System.out.println(getPubKey());
+        encryptFile("test.txt");
     }
-
-    // static void Encrypt() {
-
-    // }
 
     static HashMap<String, BigInteger> getPubKey() {
         HashMap<String, BigInteger> en = new HashMap<>();
@@ -38,6 +41,10 @@ class RSAEncrypt {
                     en.put("e", BigInteger.valueOf(Long.valueOf(split[1])));
                 } else {
                     en.put("n", BigInteger.valueOf(Long.valueOf(split[1])));
+                    if (Long.valueOf(split[1]) < 262626) {
+                        System.err.println("n must be larger than 262626. n: " + Long.valueOf(split[1]));
+                        System.exit(-1);
+                    }
                 }
             }
 
@@ -48,4 +55,48 @@ class RSAEncrypt {
         return en;
     }
 
+    static String encryptFile(String path) {
+        String encrypted = "";
+
+        HashMap<String, BigInteger> pubKey = getPubKey();
+
+        try (BufferedReader bf = new BufferedReader(new FileReader(path))) {
+            String s;
+
+            while ((s = bf.readLine()) != null) {
+                System.out.println("s: " + s);
+                String encodingValString = "";
+                for (int i = 0, j = 1; i < s.length(); ++i, ++j) {
+                    char c = s.charAt(i);
+                    int encodingVal = encoding.indexOf(c);
+                    encodingValString += String.format("%02d", encodingVal);
+                    if (j % 3 == 0) {
+                        // do work on encoded integer then reset
+                        System.out.println("encodingValString: " + encodingValString);
+
+                        BigInteger encodingAsBigInt = BigInteger.valueOf(Long.parseLong(encodingValString));
+                        BigInteger ciphertext = encodingAsBigInt.modPow(pubKey.get("e"), pubKey.get("n"));
+
+                        try (BufferedWriter out = new BufferedWriter(new FileWriter("test.enc", true))) { // append
+                            out.write(ciphertext.toString());
+                        } catch (IOException ioe) {
+                            ioe.printStackTrace();
+                            System.exit(-1);
+                        }
+
+                        encodingValString = "";
+                    } else {
+                        // keep building string
+                    }
+                }
+
+            }
+
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            System.exit(1);
+        }
+
+        return encrypted;
+    }
 }
