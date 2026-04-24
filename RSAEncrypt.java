@@ -2,6 +2,7 @@ package rsa;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -9,8 +10,6 @@ import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.text.Format;
 import java.util.HashMap;
-
-import rsa.RSAKey;
 
 class RSAEncrypt {
     static private String encoding = "abcdefghijklmnopqrstuvwxyz ";
@@ -76,6 +75,13 @@ class RSAEncrypt {
 
                         BigInteger encodingAsBigInt = BigInteger.valueOf(Long.parseLong(encodingValString));
                         BigInteger ciphertext = encodingAsBigInt.modPow(pubKey.get("e"), pubKey.get("n"));
+
+                        File f = new File("test.enc");
+                        if (f.exists()) {
+                            // delete here so as to use append below
+                            // prob some better / more efficient way to do this
+                            f.delete();
+                        }
 
                         try (BufferedWriter out = new BufferedWriter(new FileWriter("test.enc", true))) { // append
                             out.write(ciphertext.toString());
