@@ -1,3 +1,5 @@
+package rsa;
+
 import java.math.BigInteger;
 import java.util.Random;
 import java.io.BufferedWriter;
@@ -9,18 +11,25 @@ class RSAKey {
     public static void main(String[] args) {
         BigInteger[] parsedArgs = { BigInteger.ZERO };
         try {
+            // cli
             parsedArgs = parseArgs(args);
+            BigInteger p = parsedArgs[0];
+            BigInteger q = parsedArgs[1];
+            BigInteger kOrE = parsedArgs[2];
+            run(p, q, kOrE);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(-1);
         }
-        BigInteger p = parsedArgs[0];
-        BigInteger q = parsedArgs[1];
-        BigInteger kOrE = parsedArgs[2];
+
+    }
+
+    static void run(BigInteger p, BigInteger q, BigInteger kOrE) {
         BigInteger n = null;
         BigInteger e = null;
         BigInteger d = null;
         if (p == null && q == null) {
+            System.out.println("k: " + kOrE.intValue());
             BigInteger[] nTotientOfN = nTotientOfN(kOrE.intValue(), null, null);
             p = null;
             q = null;
@@ -28,6 +37,9 @@ class RSAKey {
             BigInteger phi = nTotientOfN[1];
             e = selectIntegerE(phi);
             while (e.equals(BigInteger.ZERO)) {
+                nTotientOfN = nTotientOfN(kOrE.intValue(), null, null);
+                n = nTotientOfN[0];
+                phi = nTotientOfN[1];
                 e = selectIntegerE(phi);
             }
             d = calculateD(e, n);
@@ -62,6 +74,9 @@ class RSAKey {
     }
 
     // n = p x q, ø(n)=(p-1)x(q-1)
+    // negative kBits defaults to 12 bitLength
+    // p and q may be null, in which case randomly generated using the specified or
+    // default bitLength
     static BigInteger[] nTotientOfN(int kBits, BigInteger p, BigInteger q) {
         if (kBits < 0) {
             kBits = 1 << 11;
@@ -73,7 +88,11 @@ class RSAKey {
             q = BigInteger.probablePrime(kBits, new Random());
         }
         BigInteger n = p.multiply(q);
+        System.out.println("n: " + n);
+        System.out.println("p: " + p);
+        System.out.println("q: " + q);
         BigInteger totientOfN = (p.subtract(BigInteger.ONE)).multiply(q.subtract(BigInteger.ONE));
+        System.out.println("phi: " + totientOfN);
         BigInteger[] n_totient_of_n = { n, totientOfN };
         return n_totient_of_n;
     }
