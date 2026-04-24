@@ -29,7 +29,6 @@ class RSAKey {
         BigInteger e = null;
         BigInteger d = null;
         if (p == null && q == null) {
-            System.out.println("k: " + kOrE.intValue());
             BigInteger[] nTotientOfN = nTotientOfN(kOrE.intValue(), null, null);
             p = null;
             q = null;
@@ -88,11 +87,7 @@ class RSAKey {
             q = BigInteger.probablePrime(kBits, new Random());
         }
         BigInteger n = p.multiply(q);
-        System.out.println("n: " + n);
-        System.out.println("p: " + p);
-        System.out.println("q: " + q);
         BigInteger totientOfN = (p.subtract(BigInteger.ONE)).multiply(q.subtract(BigInteger.ONE));
-        System.out.println("phi: " + totientOfN);
         BigInteger[] n_totient_of_n = { n, totientOfN };
         return n_totient_of_n;
     }
