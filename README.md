@@ -18,5 +18,5 @@ aka (d x e) &cong; 1 (mod ø(n))
 
 To compile and run:
 ```bash
-mkdir out && javac -d out *.java && java -cp out RSAKey 4551 4733 8311
+mkdir out && javac -d out *.java && java -cp out RSAKey 6551 4733 8311
 ```
